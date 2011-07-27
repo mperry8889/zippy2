@@ -97,21 +97,21 @@ class test_dos_timestamp(unittest.TestCase):
     def test_hour(self):
         for hour in range(0, 24):
             dt = datetime.datetime(2011, 01, 01, hour, 01, 01)
+            self.verify_datetime(dt)
 
     def test_minute(self):
         for minute in range(0, 60):
             dt = datetime.datetime(2011, 01, 01, 01, minute, 01)
+            self.verify_datetime(dt)
 
     def test_second(self):
         for second in range(0, 60):
             dt = datetime.datetime(2011, 01, 01, 01, 01, second)
+            self.verify_datetime(dt)
 
     def test_current_time(self):
         now = datetime.datetime.today()
         self.verify_datetime(now)
-
-
-
 
 
 class test_ZipStream(ZipStreamMixin, unittest.TestCase):
