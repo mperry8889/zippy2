@@ -4,7 +4,6 @@ from twisted.internet.defer import DeferredLock
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.defer import returnValue
 from twisted.internet.interfaces import IConsumer
-from twisted.internet.interfaces import IProducer
 
 from zippy2.producers import IZippyProducer
 
@@ -37,14 +36,18 @@ class ZipStream(object):
     @inlineCallbacks
     def addProducer(self, producer):
         assert IZippyProducer.implementedBy(producer.__class__)
-        assert IProducer.implementedBy(producer.__class__)
+
+        size = yield producer.size()
+        timestamp = yield producer.timestamp()
+        crc32 = yield producer.crc32()
+        key = yield producer.key()
 
         yield self._sendingLock.acquire()
 
         self._producers.append((producer, self._localHeaderLength))
 
         # local file header
-        timestamp = dos_timestamp(producer.timestamp())
+        timestamp = dos_timestamp(timestamp)
         localHeader = struct.pack('<L5H3L2H', # format 
                                   0x04034b50, # magic (4 bytes)
                                   20, # version needed to extract (2 bytes)
@@ -52,16 +55,16 @@ class ZipStream(object):
                                   0, # compression method (2 bytes)
                                   timestamp[1], # last mod file time (2 bytes)
                                   timestamp[0], # last mod file date (2 bytes)
-                                  producer.crc32() & 0xffffffff, # CRC (4 bytes)
-                                  producer.size(), # compressed size (4 bytes)
-                                  producer.size(), # uncompressed size (4 bytes)
-                                  len(producer.key()), # file name length (2 bytes)
+                                  crc32 & 0xffffffff, # CRC (4 bytes)
+                                  size, # compressed size (4 bytes)
+                                  size, # uncompressed size (4 bytes)
+                                  len(key), # file name length (2 bytes)
                                   0, # extra field length (2 bytes)
                                  )
 
         localHeader += producer.key()
         self.consumer.write(localHeader)
-        self._localHeaderLength += len(localHeader) + producer.size()
+        self._localHeaderLength += len(localHeader) + size
 
         # file data
         yield producer.beginProducing(self.consumer)
@@ -75,7 +78,12 @@ class ZipStream(object):
 
         # file header
         for producer, offset in self._producers:
-            timestamp = dos_timestamp(producer.timestamp())
+            size = yield producer.size()
+            timestamp = yield producer.timestamp()
+            timestamp = dos_timestamp(timestamp)
+            crc32 = yield producer.crc32()
+            key = yield producer.key()
+
             fileHeader = struct.pack('<L6H3L5H2L', # format
                                      0x02014b50, # magic (4 bytes)
                                      20, # version made by (2 bytes)
@@ -84,10 +92,10 @@ class ZipStream(object):
                                      0, # compression method (2 bytes)
                                      timestamp[1], # last mod file time (2 bytes)
                                      timestamp[0], # last mod file date (2 bytes)
-                                     producer.crc32() & 0xffffffff, # CRC (4 bytes)
-                                     producer.size(), # compressed size (4 bytes)
-                                     producer.size(), # uncompressed size(4 bytes)
-                                     len(producer.key()), # file name length (2 bytes)
+                                     crc32 & 0xffffffff, # CRC (4 bytes)
+                                     size, # compressed size (4 bytes)
+                                     size, # uncompressed size(4 bytes)
+                                     len(key), # file name length (2 bytes)
                                      0, # extra field length (2 bytes)
                                      0, # file comment length (2 bytes)
                                      0, # disk number start (2 bytes)

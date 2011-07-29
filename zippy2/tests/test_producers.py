@@ -4,6 +4,7 @@ from twisted.internet.interfaces import IConsumer
 from twisted.internet.defer import inlineCallbacks
 
 from zippy2.producers import FileProducer
+from zippy2.producers import AwsProducer
 
 from StringIO import StringIO
 
@@ -38,11 +39,14 @@ class test_FileProducer(unittest.TestCase):
         fh.close()
 
         producer = FileProducer(filename)
-        self.assertEquals(os.path.getsize(filename), producer.size())
-        self.assertEquals(binascii.crc32(data) & 0xffffffff, producer.crc32())
+        size = yield producer.size()
+        crc32 = yield producer.crc32()
+
+        self.assertEquals(os.path.getsize(filename), size)
+        self.assertEquals(binascii.crc32(data) & 0xffffffff, crc32)
 
         consumer = TestConsumer()
-        deferred = yield producer.beginProducing(consumer)
+        yield producer.beginProducing(consumer)
 
         consumer.seek(0)
         self.assertEquals(data, consumer.read())

@@ -1,19 +1,21 @@
 from twisted.internet import reactor
 from twisted.internet.interfaces import IPushProducer
-from twisted.internet.interfaces import IPullProducer
-from twisted.internet.interfaces import IConsumer
 from twisted.internet.defer import Deferred
+from twisted.internet.defer import returnValue
 from twisted.internet.defer import inlineCallbacks
+from twisted.web.client import Agent
+from twisted.web.http_headers import Headers
+from twisted.internet.protocol import Protocol
+
+from txaws.s3.client import Query as txAwsQuery
+from txaws.s3.client import URLContext 
+from txaws.s3.client import S3Client
 
 from zope.interface import implements
 from zope.interface import Interface
 
-from copy import copy
-from StringIO import StringIO
-
 import datetime
 import binascii
-import boto
 import os
 
 
@@ -33,16 +35,12 @@ class IZippyProducer(Interface):
     def crc32(self):
         pass
 
-    def generate(self):
-        pass
-
 
 class GeneratorBasedProducer(object):
     implements(IPushProducer)
 
-    def __init__(self, filename):
+    def __init__(self):
         self.consumer = None
-        self.filename = filename
         self.paused = True
         self.generator = self.generate()
 
@@ -77,8 +75,9 @@ class GeneratorBasedProducer(object):
 class FileProducer(GeneratorBasedProducer):
     implements(IZippyProducer)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, filename, *args, **kwargs):
         super(FileProducer, self).__init__(*args, **kwargs)
+        self.filename = filename
         self._timestamp = None
         self._filesize = None
         self._crc32 = None
@@ -131,22 +130,91 @@ class FileProducer(GeneratorBasedProducer):
                     yield data
 
 
-class AwsKeyProducer(GeneratorBasedProducer):
+
+# Use Twisted's new Agent HTTP client instead of the usual HTTPClient
+# that txAws uses.  This is required for streaming of S3 objects
+# since HTTPClient wants to just put the data in memory and return it
+# via a callback
+
+class txAwsAgentQuery(txAwsQuery):
+    def submit(self, url_context=None):
+        if not url_context:
+            url_context = URLContext(
+                self.endpoint, self.bucket, self.object_name)
+        agent = Agent(reactor)
+        headers = Headers()
+        for k, v in self.get_headers().iteritems():
+            headers.addRawHeader(k, v)
+        return agent.request(self.action, url_context.get_url(), headers)
+
+
+class AwsProducer(Protocol):
     implements(IZippyProducer)
 
-    def __init__(self, *args, **kwargs):
-        super(AwsKeyProducer, self).__init__(*args, **kwargs)
+    def __init__(self, bucket, key, *args, **kwargs):
+        self._key = key
+        self._bucket = bucket
+        self._s3headers = None
 
-        try:
-            self.filesize = kwargs['size']
-        except KeyError:
-            pass
+        self._s3client = S3Client()
+        self._s3agent = S3Client(query_factory=txAwsAgentQuery)
 
+        self._stopped = False
+
+    @inlineCallbacks
+    def get_headers(self):
+        self._s3headers = yield self._s3client.head_object(self._bucket, self._key)
+
+    def key(self):
+        return self._key
+
+    @inlineCallbacks
+    def timestamp(self):
+        if not self._s3headers:
+            yield self.get_headers()
+
+        returnValue(datetime.datetime.strptime(self._s3headers['last-modified'][0], '%a, %d %b %Y %H:%M:%S %Z'))
+
+    @inlineCallbacks
+    def size(self):
+        if not self._s3headers:
+            yield self.get_headers()
+        returnValue(int(self._s3headers['content-length'][0]))
+        
+    @inlineCallbacks
     def crc32(self):
-        pass
+        if not self._s3headers:
+            yield self.get_headers()
 
-    def generate(self):
-        pass
+        returnValue(int(self._s3headers['x-amz-meta-crc32'][0], 16))
 
 
+    def dataReceived(self, data):
+        self.consumer.write(data)
+
+    def connectionLost(self, reason):
+        self.stopProducing()
+
+    @inlineCallbacks
+    def beginProducing(self, consumer):
+        self.consumer = consumer
+        self.deferred = Deferred()
+
+        self.consumer.registerProducer(self, True)
+        self._response = yield self._s3agent.get_object(self._bucket, self._key)
+        self._response.deliverBody(self)
+
+        yield self.deferred
+
+    def pauseProducing(self):
+        self.transport.pauseProducing()
+
+    def resumeProducing(self):
+        self.transport.resumeProducing()
+
+    def stopProducing(self):
+        if not self._stopped:
+            self.consumer.unregisterProducer()
+            self.deferred.callback(True)
+            self._stopped = True
 
