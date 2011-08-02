@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from twisted.internet import reactorA
+from twisted.internet import reactor
 from twisted.web.server import Site
 
 from zippy2.api import ApiRoot
