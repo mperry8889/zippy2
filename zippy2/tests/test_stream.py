@@ -19,6 +19,7 @@ from zippy2.producers import FileProducer
 from zippy2.stream import ZipStream
 from zippy2.stream import dos_timestamp
 from zippy2.tests.test_producers import TestConsumer
+from zippy2.tests.test_producers import make_random_temp_file
 
 def MB(i):
     return int(i*(1024**2))
@@ -43,13 +44,8 @@ class ZipStreamMixin(object):
         producers = {}
 
         for i in range(num_files):
-            fd, filename = tempfile.mkstemp(prefix='z2')
-            fh = os.fdopen(fd, 'w')
             producersize = random.randint(min_size, max_size)
-            with open('/dev/urandom', 'r') as r:
-                fh.write(r.read(producersize))
-            fh.flush()
-            fh.close()
+            filename = make_random_temp_file(producersize)
 
             producer = FileProducer(filename)
             deferreds.append(zipstream.addProducer(producer))

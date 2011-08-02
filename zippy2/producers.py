@@ -35,6 +35,9 @@ class IZippyProducer(Interface):
     def crc32(self):
         pass
 
+    def verify(self):
+        pass
+
 
 class GeneratorBasedProducer(object):
     implements(IPushProducer)
@@ -120,6 +123,9 @@ class FileProducer(GeneratorBasedProducer):
         self._crc32 = crc
         return crc
 
+    def verify(self):
+        return True
+
     def generate(self):
         with open(self.filename, 'rb') as f:
             while True:
@@ -146,6 +152,10 @@ class txAwsAgentQuery(txAwsQuery):
         for k, v in self.get_headers().iteritems():
             headers.addRawHeader(k, v)
         return agent.request(self.action, url_context.get_url(), headers)
+
+
+class AwsProducerMissingCRC(Exception): pass
+class AwsProducerKeyError(Exception): pass
 
 
 class AwsProducer(Protocol):
@@ -187,6 +197,20 @@ class AwsProducer(Protocol):
             yield self.get_headers()
 
         returnValue(int(self._s3headers['x-amz-meta-crc32'][0], 16))
+
+    @inlineCallbacks
+    def verify(self):
+        if not self._s3headers:
+            try:
+                yield self.get_headers()
+            except Exception, e:
+                # 404 not found
+                raise AwsProducerKeyError('Key not found')
+
+        try:
+            crc32 = yield self.crc32()
+        except KeyError:
+            raise AwsProducerMissingCRC('CRC32 metadata missing from key')
 
 
     def dataReceived(self, data):
