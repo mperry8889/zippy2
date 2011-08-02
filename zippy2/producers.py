@@ -113,12 +113,9 @@ class FileProducer(GeneratorBasedProducer):
             return self._crc32
 
         generator = self.generate()
-        crc = None
+        crc = 0
         for block in generator:
-            if crc:
-                crc = binascii.crc32(block, crc) & 0xffffffff  # cycle
-            else:
-                crc = binascii.crc32(block)                    # initial crc
+            crc = binascii.crc32(block, crc) & 0xffffffff
 
         self._crc32 = crc
         return crc
