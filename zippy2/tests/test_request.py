@@ -1,24 +1,9 @@
 from twisted.trial import unittest
-from zope.interface import implements
-from twisted.internet.interfaces import IConsumer
-from twisted.internet.defer import inlineCallbacks
-from twisted.internet.defer import DeferredList
-from txaws.s3.client import S3Client
 
 from zippy2.request import ZipRequest
-from zippy2.request import ZipInvalidJson
-
-from StringIO import StringIO
-
-import tempfile
-import random
-import binascii
-import os
-import simplejson as json
 
 
 class test_ZipRequest(unittest.TestCase):
-
     pass
 
 class test_ZipRequest_from_json(unittest.TestCase):

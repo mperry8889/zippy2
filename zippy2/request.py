@@ -1,10 +1,4 @@
-from twisted.internet import reactor
-from twisted.internet.interfaces import IPushProducer
-from twisted.internet.defer import Deferred
 from twisted.internet.defer import DeferredList
-from twisted.internet.defer import inlineCallbacks
-from twisted.internet.defer import returnValue
-from twisted.web.resource import Resource
 
 from zippy2.producers import AwsProducer
 from zippy2.stream import ZipStream

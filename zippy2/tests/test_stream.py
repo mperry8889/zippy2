@@ -1,25 +1,20 @@
-from twisted.trial import unittest
 from twisted.internet.defer import DeferredList
-from twisted.internet.defer import returnValue
-from twisted.internet.interfaces import IConsumer
 from twisted.internet.defer import inlineCallbacks
-
-from zope.interface import implements
-
-from StringIO import StringIO
-from zipfile import ZipInfo
-from zipfile import ZipFile
-import datetime
-import random
-import binascii
-import tempfile
-import os
+from twisted.internet.defer import returnValue
+from twisted.trial import unittest
 
 from zippy2.producers import FileProducer
 from zippy2.stream import ZipStream
 from zippy2.stream import dos_timestamp
 from zippy2.tests.test_producers import TestConsumer
 from zippy2.tests.test_producers import make_random_temp_file
+
+from zipfile import ZipFile
+import datetime
+import random
+import binascii
+import os
+
 
 def MB(i):
     return int(i*(1024**2))

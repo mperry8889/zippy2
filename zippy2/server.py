@@ -1,13 +1,6 @@
 #!/usr/bin/env python
-from twisted.internet import reactor
-from twisted.internet.interfaces import IPushProducer
-from twisted.internet.defer import Deferred
-from twisted.internet.defer import DeferredList
-from twisted.internet.defer import inlineCallbacks
-from twisted.internet.defer import returnValue
-
-from twisted.web.server import Site, NOT_DONE_YET
-from twisted.web.resource import Resource
+from twisted.internet import reactorA
+from twisted.web.server import Site
 
 from zippy2.api import ApiRoot
 

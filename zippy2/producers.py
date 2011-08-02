@@ -1,21 +1,21 @@
 from twisted.internet import reactor
-from twisted.internet.interfaces import IPushProducer
 from twisted.internet.defer import Deferred
-from twisted.internet.defer import returnValue
 from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import returnValue
+from twisted.internet.interfaces import IPushProducer
+from twisted.internet.protocol import Protocol
 from twisted.web.client import Agent
 from twisted.web.http_headers import Headers
-from twisted.internet.protocol import Protocol
 
 from txaws.s3.client import Query as txAwsQuery
-from txaws.s3.client import URLContext 
 from txaws.s3.client import S3Client
+from txaws.s3.client import URLContext 
 
-from zope.interface import implements
 from zope.interface import Interface
+from zope.interface import implements
 
-import datetime
 import binascii
+import datetime
 import os
 
 

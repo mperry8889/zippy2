@@ -1,15 +1,10 @@
-from twisted.internet import reactor
-from twisted.internet.defer import Deferred
 from twisted.internet.defer import DeferredLock
 from twisted.internet.defer import inlineCallbacks
-from twisted.internet.defer import returnValue
 from twisted.internet.interfaces import IConsumer
 
 from zippy2.producers import IZippyProducer
 
-import datetime
 import struct
-import os
 
 
 

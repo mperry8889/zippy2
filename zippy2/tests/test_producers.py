@@ -11,7 +11,6 @@ from zippy2.producers import AwsProducer
 from StringIO import StringIO
 
 import tempfile
-import random
 import binascii
 import os
 

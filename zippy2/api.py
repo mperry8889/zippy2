@@ -1,15 +1,7 @@
-from twisted.internet import reactor
-from twisted.internet.interfaces import IPushProducer
-from twisted.internet.defer import Deferred
-from twisted.internet.defer import DeferredList
-from twisted.internet.defer import inlineCallbacks
-from twisted.internet.defer import returnValue
-
-from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
+from twisted.web.server import NOT_DONE_YET
 
 from zippy2.request import ZipRequest
-from zippy2.stream import ZipStream
 
 import simplejson as json
 
@@ -17,7 +9,6 @@ import simplejson as json
 class Create(Resource):
 
     def render_response(self, value, zip_request, request):
-        print '%s.zip' % zip_request.id
         ZipRoot.putChild('%s.zip' % zip_request.id, ZipNode(zip_request))
         request.write('/get/%s.zip' % zip_request.id)
         request.finish()
