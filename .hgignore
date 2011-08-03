@@ -1,5 +1,9 @@
 syntax: glob
 _trial_temp
 data
+*.cache
 *.pyc
 *.swp
+*.pid
+*.log
+
