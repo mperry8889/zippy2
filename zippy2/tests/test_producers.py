@@ -31,7 +31,7 @@ def make_random_temp_file(size=5*(1024**2)):
     fd, filename = tempfile.mkstemp(prefix='z2')
     fh = os.fdopen(fd, 'w')
     with open('/dev/urandom', 'r') as r:
-        data = r.read(5*(1024**2))  # 5MB of random data
+        data = r.read(size)  # 5MB of random data
         fh.write(data)
     fh.flush()
     fh.close()
