@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 from twisted.internet import reactor
 from twisted.web.server import Site
 from twisted.application.service import Service
